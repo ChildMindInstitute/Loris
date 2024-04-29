@@ -177,9 +177,9 @@ class Login extends Endpoint
         ];
 
         $key = $config->getSetting("JWTKey");
-        if (!self::isKeyStrong($key)) {
-            return "";
-        }
+//        if (!self::isKeyStrong($key)) {
+//            return "";
+//        }
         return \Firebase\JWT\JWT::encode($token, $key, "HS256");
     }
 
