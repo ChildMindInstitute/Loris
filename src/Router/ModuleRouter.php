@@ -73,7 +73,6 @@ class ModuleRouter implements RequestHandlerInterface
                 )
             )->process($request, $this->module);
         }
-
         // Directly handle the request, because it was public anyways.
         return $this->module->handle($request);
     }
