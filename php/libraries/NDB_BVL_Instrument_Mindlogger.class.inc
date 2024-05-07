@@ -105,6 +105,7 @@ class NDB_BVL_Instrument_Mindlogger extends \NDB_BVL_Instrument
                 'Name'        => $activitySchema["name"],
                 'Description' => $activitySchema["description"],
             ];
+            $this->appletName = $this->appletName . ' (' . $activitySchema["name"] . ')';
             foreach ($activitySchema["items"] as $actItem) {
                 $this->updateDictionary("{$actId}", $actItem);
             }
