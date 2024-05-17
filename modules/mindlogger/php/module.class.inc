@@ -86,6 +86,9 @@ class Module extends \Module
             case 'schema':
                 $handler = new \LORIS\mindlogger\Endpoints\Schema($this->loris);
                 break;
+            case 'applet':
+                $handler = new \LORIS\mindlogger\Endpoints\Applet($this->loris);
+                break;
             default:
                 return new \LORIS\Http\Response\JSON\NotFound();
         }
