@@ -8,6 +8,12 @@ use Psr\Http\Message\ServerRequestInterface;
 
 class Applet extends Endpoint
 {
+    public function __construct(\LORIS\LorisInstance $loris)
+    {
+        $this->db = \NDB_Factory::singleton()->database();
+        parent::__construct($loris);
+    }
+
     protected function allowedMethods(): array
     {
         return ['GET'];
@@ -25,7 +31,6 @@ class Applet extends Endpoint
 
     public function handle(ServerRequestInterface $request) : ResponseInterface
     {
-        $DB = \NDB_Factory::singleton()->database();
         $pathparts = $request->getAttribute('pathparts');
 
         if (!isset($pathparts[1])) {
@@ -40,7 +45,27 @@ class Applet extends Endpoint
 
         $appletId = $pathparts[1];
 
-        $result = $DB->pselect(
+        $result = $this->getVisits($appletId);
+
+        $candidates = [];
+        $data = [];
+        foreach ($result as $entry) {
+            $candidates[$entry['CandID']][] = $entry['Visit_label'];
+        }
+
+        foreach ($candidates as $candidateId => $entry) {
+            $data[] = [
+                'CandID' => $candidateId,
+                'Visits' => array_unique($entry),
+            ];
+        }
+
+        return new \LORIS\Http\Response\JSON\OK($data);
+    }
+
+    public function getVisits($appletId)
+    {
+        return $this->db->pselect(
             "
             SELECT
                 f.Test_name,
@@ -69,20 +94,5 @@ class Applet extends Endpoint
             ORDER BY s.Visit_label, f.Test_name, f.CommentID",
             ['appletId' => $appletId]
         );
-
-        $candidates = [];
-        $data = [];
-        foreach ($result as $entry) {
-            $candidates[$entry['CandID']][] = $entry['Visit_label'];
-        }
-
-        foreach ($candidates as $candidateId => $entry) {
-            $data[] = [
-                'CandID' => $candidateId,
-                'Visits' => array_unique($entry),
-            ];
-        }
-
-        return new \LORIS\Http\Response\JSON\OK($data);
     }
 }

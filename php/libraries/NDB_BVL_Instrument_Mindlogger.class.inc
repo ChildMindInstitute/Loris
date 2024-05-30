@@ -95,8 +95,8 @@ class NDB_BVL_Instrument_Mindlogger extends \NDB_BVL_Instrument
         $this->testName = $activityID;
         try {
             $this->scope = new Scope(Scope::SESSION);
-            $db          = $this->loris->getDatabaseConnection();
-            $activity      = $db->pselectRow("SELECT * FROM instrument_mindlogger_schema WHERE ActivityID = ?", [$activityID]);
+
+            $activity = $this->getSchemaByActivityId($activityID);
 
             $activitySchema = json_decode($activity["ActivitySchema"], true);
 
@@ -112,6 +112,13 @@ class NDB_BVL_Instrument_Mindlogger extends \NDB_BVL_Instrument
         } catch (\Exception $e) {
             throw new \LorisException("Error loading applet: " . $e->getMessage());
         }
+    }
+
+    public function getSchemaByActivityId($activityID)
+    {
+        $db = $this->loris->getDatabaseConnection();
+
+        return $db->pselectRow("SELECT * FROM instrument_mindlogger_schema WHERE ActivityID = ?", [$activityID]);
     }
 
 

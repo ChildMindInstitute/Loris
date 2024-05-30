@@ -46,6 +46,8 @@ class NDB_Factory
      */
     private static $_settings = null;
 
+    private static $self = null;
+
     /**
      * Returns a single factory object. This must be used instead of being
      * constructed directly so that the testing suite and Loris code are
@@ -55,11 +57,16 @@ class NDB_Factory
      */
     static function singleton(): \NDB_Factory
     {
-        static $self = null;
-        if ($self === null) {
-            $self = new NDB_Factory();
+        //static $self = null;
+        if (self::$self === null) {
+            self::$self = new NDB_Factory();
         }
-        return $self;
+        return self::$self;
+    }
+
+    static function setInstance($factory)
+    {
+        self::$self = $factory;
     }
 
     /**
@@ -246,8 +253,8 @@ class NDB_Factory
             $user     = $couchConfig['admin'];
             $password = $couchConfig['adminpass'];
             error_log(
-                "LORIS Deprecation Warning: NDB_Factory::CouchDB() will no 
-                 longer support accepting only a database name, make sure to 
+                "LORIS Deprecation Warning: NDB_Factory::CouchDB() will no
+                 longer support accepting only a database name, make sure to
                  specify all necessary parameters in the function call."
             );
         } else if (!empty($database)
@@ -267,8 +274,8 @@ class NDB_Factory
             $user     = $couchConfig['admin'];
             $password = $couchConfig['adminpass'];
             error_log(
-                "LORIS Deprecation Warning: NDB_Factory::CouchDB() will no 
-                 longer support accepting only a database name, make sure to 
+                "LORIS Deprecation Warning: NDB_Factory::CouchDB() will no
+                 longer support accepting only a database name, make sure to
                  specify all necessary parameters in the function call."
             );
         } else if (empty($database)

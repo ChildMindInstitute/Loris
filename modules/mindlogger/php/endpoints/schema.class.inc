@@ -31,6 +31,18 @@ class Schema extends Endpoint
     const INSTRUMENT_SUBGROUP_NAME = "Mindlogger instruments";
 
     /**
+     * @var \Database
+     */
+    private $db;
+
+    public function __construct(\LORIS\LorisInstance $loris)
+    {
+        $this->db = \NDB_Factory::singleton()->database();
+
+        parent::__construct($loris);
+    }
+
+    /**
      * Permission checks
      *
      * @param \User $user The requesting user
@@ -107,23 +119,23 @@ class Schema extends Endpoint
      */
     private function _handlePOST(ServerRequestInterface $request): ResponseInterface
     {
-        $data = json_decode((string)$request->getBody(), true);
-        $db   = \NDB_Factory::singleton()->database();
+        $data = json_decode((string) $request->getBody(), true);
 
-        $appletId     = $data["id"];
+        $appletId     = $data['id'];
         $activitiesSchema = $data['activities'];
 
-        $existingActivities = $db->pselectCol("SELECT ActivityID FROM instrument_mindlogger_schema WHERE AppletID = ?", [$appletId]);
+        $existingActivities = $this->getExistingActivities($appletId);
+        $instrumentSubgroupId = $this->getSubgroupId();
 
         try {
-            $db->beginTransaction();
-            $instrumentSubgroupId = $db->pselectOneInt("SELECT ID FROM test_subgroups WHERE Subgroup_name = ?", [self::INSTRUMENT_SUBGROUP_NAME]);
+            $this->db->beginTransaction();
+
             foreach ($activitiesSchema as $activity) {
                 $activityId = $activity['id'];
                 if (in_array($activityId, $existingActivities)) {
                     continue;
                 }
-                $db->unsafeInsert(
+                $this->db->unsafeInsert(
                     "instrument_mindlogger_schema",
                     [
                         "AppletID"       => $appletId,
@@ -135,15 +147,25 @@ class Schema extends Endpoint
                 $this->makeInstrument($activityId, $instrumentSubgroupId, $activity["name"]);
             }
 
-            $db->commit();
+            $this->db->commit();
 
             return new \LORIS\Http\Response\JsonResponse(["status" => "OK"]);
         } catch (\Exception $e) {
-            $db->rollback();
+            $this->db->rollback();
             return new \LORIS\Http\Response\JSON\BadRequest(
                 $e->getMessage()
             );
         }
+    }
+
+    public function getExistingActivities($appletId)
+    {
+        return $this->db->pselectCol("SELECT ActivityID FROM instrument_mindlogger_schema WHERE AppletID = ?", [$appletId]);
+    }
+
+    public function getSubgroupId()
+    {
+        return $this->db->pselectOneInt("SELECT ID FROM test_subgroups WHERE Subgroup_name = ?", [self::INSTRUMENT_SUBGROUP_NAME]);
     }
 
 
@@ -157,15 +179,13 @@ class Schema extends Endpoint
      */
     protected function makeInstrument(string $testName, int $subgroupId, string $fullName): void
     {
-        $db         = \NDB_Factory::singleton()->database();
-
-        $db->insert(
-            "test_names",
+        $this->db->insert(
+            'test_names',
             [
-                "Test_name"     => $testName,
-                "Full_name"     => $fullName,
-                "Sub_group"     => $subgroupId,
-                "IsDirectEntry" => 0,
+                'Test_name'     => $testName,
+                'Full_name'     => $fullName,
+                'Sub_group'     => $subgroupId,
+                'IsDirectEntry' => 0,
             ]
         );
     }
