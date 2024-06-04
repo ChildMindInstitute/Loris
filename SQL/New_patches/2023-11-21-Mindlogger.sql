@@ -13,11 +13,12 @@ VALUES ('mindlogger_schema_create', 'Mindlogger applet schemas and instruments t
 CREATE TABLE `instrument_mindlogger_schema`
 (
     `AppletID`      varchar(36) NOT NULL,
+    `Version`       varchar(36) NOT NULL,
     `ActivityID`    varchar(36) NOT NULL,
     `ActivitySchema`  text        NOT NULL,
     `CreatedDate`   timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `UpdatedDate`   timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`AppletId`, `ActivityID`)
+    PRIMARY KEY (`AppletId`, `Version`, `ActivityID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Add Mindlogger instruments subgroup

@@ -121,46 +121,47 @@ class Schema extends Endpoint
     {
         $data = json_decode((string) $request->getBody(), true);
 
-        $appletId     = $data['id'];
-        $activitiesSchema = $data['activities'];
+        foreach ($data as $versionSchema) {
+            $version = $versionSchema['version'];
+            $schema = $versionSchema['applet'];
 
-        $existingActivities = $this->getExistingActivities($appletId);
-        $instrumentSubgroupId = $this->getSubgroupId();
+            $appletId     = $schema['id'];
+            $activitiesSchema = $schema['activities'];
 
-        try {
-            $this->db->beginTransaction();
+            $existingActivities = $this->getExistingActivities($appletId, $version);
+            $instrumentSubgroupId = $this->getSubgroupId();
 
-            foreach ($activitiesSchema as $activity) {
-                $activityId = $activity['id'];
-                if (in_array($activityId, $existingActivities)) {
-                    continue;
+            try {
+                $this->db->beginTransaction();
+
+                foreach ($activitiesSchema as $activity) {
+                    $activityId = $activity['id'];
+                    //Do not proceed already exists entries
+                    if (in_array($activityId, $existingActivities)) {
+                        continue;
+                    }
+
+                    $this->saveSchema($appletId, $version, $activity);
+                    $this->makeInstrument($activityId, $instrumentSubgroupId, $activity["name"]);
                 }
-                $this->db->unsafeInsert(
-                    "instrument_mindlogger_schema",
-                    [
-                        "AppletID"       => $appletId,
-                        "ActivityID"     => $activityId,
-                        "ActivitySchema" => json_encode($activity),
-                    ]
+
+                $this->db->commit();
+
+                return new \LORIS\Http\Response\JsonResponse(["status" => "OK"]);
+            } catch (\Exception $e) {
+                $this->db->rollback();
+                return new \LORIS\Http\Response\JSON\BadRequest(
+                    $e->getMessage()
                 );
-
-                $this->makeInstrument($activityId, $instrumentSubgroupId, $activity["name"]);
             }
-
-            $this->db->commit();
-
-            return new \LORIS\Http\Response\JsonResponse(["status" => "OK"]);
-        } catch (\Exception $e) {
-            $this->db->rollback();
-            return new \LORIS\Http\Response\JSON\BadRequest(
-                $e->getMessage()
-            );
         }
+
+
     }
 
-    public function getExistingActivities($appletId)
+    public function getExistingActivities($appletId, $version)
     {
-        return $this->db->pselectCol("SELECT ActivityID FROM instrument_mindlogger_schema WHERE AppletID = ?", [$appletId]);
+        return $this->db->pselectCol("SELECT ActivityID FROM instrument_mindlogger_schema WHERE AppletID = ? AND Version = ?", [$appletId, $version]);
     }
 
     public function getSubgroupId()
@@ -186,6 +187,19 @@ class Schema extends Endpoint
                 'Full_name'     => $fullName,
                 'Sub_group'     => $subgroupId,
                 'IsDirectEntry' => 0,
+            ]
+        );
+    }
+
+    public function saveSchema($appletId, $version, $data)
+    {
+        $this->db->unsafeInsert(
+            'instrument_mindlogger_schema',
+            [
+                'AppletID'       => $appletId,
+                'Version'        => $version,
+                'ActivityID'     => $data['id'],
+                'ActivitySchema' => json_encode($data),
             ]
         );
     }
