@@ -39,12 +39,23 @@ class Applet extends Endpoint
             );
         }
 
-        if ($pathparts[2] != 'visits') {
-            return new \LORIS\Http\Response\JSON\NotFound();
+        $appletId = $pathparts[1];
+        switch ($pathparts[2]) {
+            case 'visits':
+                $data = $this->handleVisits($appletId);
+                break;
+            case 'versions':
+                $data = $this->handleVersions($appletId);
+                break;
+            default:
+                return new \LORIS\Http\Response\JSON\NotFound();
         }
 
-        $appletId = $pathparts[1];
+        return new \LORIS\Http\Response\JSON\OK($data);
+    }
 
+    private function handleVisits($appletId)
+    {
         $result = $this->getVisits($appletId);
 
         $candidates = [];
@@ -60,7 +71,12 @@ class Applet extends Endpoint
             ];
         }
 
-        return new \LORIS\Http\Response\JSON\OK($data);
+        return $data;
+    }
+
+    private function handleVersions($appletId)
+    {
+        return $this->getAppletVersions($appletId);
     }
 
     public function getVisits($appletId)
@@ -94,5 +110,12 @@ class Applet extends Endpoint
             ORDER BY s.Visit_label, f.Test_name, f.CommentID",
             ['appletId' => $appletId]
         );
+    }
+
+    private function getAppletVersions($appletId)
+    {
+        return $this->db->pselectCol("
+            SELECT `Version` FROM `instrument_mindlogger_schema` WHERE `AppletId` = ? GROUP BY `Version`
+        ", [$appletId]);
     }
 }

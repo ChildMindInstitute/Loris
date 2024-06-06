@@ -121,7 +121,7 @@ class Instruments extends Endpoint implements \LORIS\Middleware\ETagCalculator
         );
 
         if (empty($entry)) {
-            // The instrument must exists in the flag table. (start next stage)
+            // The instrument must exist in the flag table. (start next stage)
             return new \LORIS\Http\Response\JSON\NotFound('Instrument not found');
         }
 
@@ -142,14 +142,14 @@ class Instruments extends Endpoint implements \LORIS\Middleware\ETagCalculator
             if ($instrument->_hasAccess($user) == false) {
                 return new \LORIS\Http\Response\JSON\Forbidden();
             };
+
+            $endpoint = new Instrument\Instrument($this->_visit, $instrument);
+            $request  = $request->withAttribute('pathparts', $pathparts);
+
+            return $endpoint->process($request, $endpoint);
         } catch (\Exception $e) {
             return new \LORIS\Http\Response\JSON\NotFound();
         }
-
-        $endpoint = new Instrument\Instrument($this->_visit, $instrument);
-        $request  = $request->withAttribute('pathparts', $pathparts);
-
-        return $endpoint->process($request, $endpoint);
     }
 
     /**
