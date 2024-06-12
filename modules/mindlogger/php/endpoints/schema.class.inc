@@ -142,7 +142,7 @@ class Schema extends Endpoint
                     }
 
                     $this->saveSchema($appletId, $version, $activity);
-                    $this->makeInstrument($activityId, $instrumentSubgroupId, $activity["name"]);
+                    $this->makeInstrument($activityId, $instrumentSubgroupId, $activity["name"] . ' ' . $version);
                 }
 
                 $this->db->commit();
@@ -155,8 +155,6 @@ class Schema extends Endpoint
                 );
             }
         }
-
-
     }
 
     public function getExistingActivities($appletId, $version)

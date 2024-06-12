@@ -47,6 +47,9 @@ class Applet extends Endpoint
             case 'versions':
                 $data = $this->handleVersions($appletId);
                 break;
+            case 'answers':
+                $data = $this->handleAnswers($appletId);
+                break;
             default:
                 return new \LORIS\Http\Response\JSON\NotFound();
         }
@@ -77,6 +80,26 @@ class Applet extends Endpoint
     private function handleVersions($appletId)
     {
         return $this->getAppletVersions($appletId);
+    }
+
+    private function handleAnswers($appletId)
+    {
+        $activities = $this->getActivitiesDataByAppletId($appletId);
+        $answers = [];
+
+        foreach ($activities as $activity) {
+            $activity = json_decode($activity, true);
+
+            foreach ($activity as $activityKey => $item) {
+                $parts = explode('__', $activityKey);
+
+                if (isset($parts[2])) {
+                    $answers[] = $parts[2];
+                }
+            }
+        }
+
+        return $answers;
     }
 
     public function getVisits($appletId)
@@ -116,6 +139,15 @@ class Applet extends Endpoint
     {
         return $this->db->pselectCol("
             SELECT `Version` FROM `instrument_mindlogger_schema` WHERE `AppletId` = ? GROUP BY `Version`
+        ", [$appletId]);
+    }
+
+    private function getActivitiesDataByAppletId($appletId)
+    {
+        return $this->db->pselectCol("
+            SELECT `flag`.`Data` FROM `flag`
+            JOIN `instrument_mindlogger_schema` ON flag.Test_name = instrument_mindlogger_schema.ActivityID
+            WHERE instrument_mindlogger_schema.`AppletId` = ? AND `flag`.Data IS NOT NULL
         ", [$appletId]);
     }
 }

@@ -14,7 +14,7 @@ CREATE TABLE `instrument_mindlogger_schema`
 (
     `AppletID`      varchar(36) NOT NULL,
     `Version`       varchar(36) NOT NULL,
-    `ActivityID`    varchar(36) NOT NULL,
+    `ActivityID`    varchar(256) NOT NULL,
     `ActivitySchema`  text        NOT NULL,
     `CreatedDate`   timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `UpdatedDate`   timestamp   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
