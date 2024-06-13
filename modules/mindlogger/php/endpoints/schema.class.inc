@@ -121,18 +121,19 @@ class Schema extends Endpoint
     {
         $data = json_decode((string) $request->getBody(), true);
 
-        foreach ($data as $versionSchema) {
-            $version = $versionSchema['version'];
-            $schema = $versionSchema['applet'];
+        try {
+            $this->db->beginTransaction();
 
-            $appletId     = $schema['id'];
-            $activitiesSchema = $schema['activities'];
+            foreach ($data as $versionSchema) {
+                $version = $versionSchema['version'];
+                var_dump($version);
+                $schema = $versionSchema['applet'];
 
-            $existingActivities = $this->getExistingActivities($appletId, $version);
-            $instrumentSubgroupId = $this->getSubgroupId();
+                $appletId     = $schema['id'];
+                $activitiesSchema = $schema['activities'];
 
-            try {
-                $this->db->beginTransaction();
+                $existingActivities = $this->getExistingActivities($appletId, $version);
+                $instrumentSubgroupId = $this->getSubgroupId();
 
                 foreach ($activitiesSchema as $activity) {
                     $activityId = $activity['id'];
@@ -144,16 +145,16 @@ class Schema extends Endpoint
                     $this->saveSchema($appletId, $version, $activity);
                     $this->makeInstrument($activityId, $instrumentSubgroupId, $activity["name"] . ' ' . $version);
                 }
-
-                $this->db->commit();
-
-                return new \LORIS\Http\Response\JsonResponse(["status" => "OK"]);
-            } catch (\Exception $e) {
-                $this->db->rollback();
-                return new \LORIS\Http\Response\JSON\BadRequest(
-                    $e->getMessage()
-                );
             }
+
+            $this->db->commit();
+
+            return new \LORIS\Http\Response\JsonResponse(["status" => "OK"]);
+        } catch (\Exception $e) {
+            $this->db->rollback();
+            return new \LORIS\Http\Response\JSON\BadRequest(
+                $e->getMessage()
+            );
         }
     }
 
@@ -178,7 +179,7 @@ class Schema extends Endpoint
      */
     protected function makeInstrument(string $testName, int $subgroupId, string $fullName): void
     {
-        $this->db->insert(
+        $this->db->insertIgnore(
             'test_names',
             [
                 'Test_name'     => $testName,
