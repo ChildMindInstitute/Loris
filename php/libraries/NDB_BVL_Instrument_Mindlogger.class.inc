@@ -326,7 +326,7 @@ class NDB_BVL_Instrument_Mindlogger extends \NDB_BVL_Instrument
             return false;
         }, ARRAY_FILTER_USE_KEY);
 
-        return $filteredArray[0] ?? '';
+        return array_values($filteredArray)[0] ?? '';
     }
 
     function clearInstrument(): void

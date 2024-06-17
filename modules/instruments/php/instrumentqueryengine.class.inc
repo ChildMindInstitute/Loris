@@ -105,7 +105,7 @@ class InstrumentQueryEngine implements \LORIS\Data\Query\QueryEngine
         }
 
         $query       = "SELECT c.CandID, f.CommentID
-            FROM flag f 
+            FROM flag f
             JOIN session s ON (s.ID=f.SessionID AND s.Active='Y')
             JOIN candidate c ON (s.CandID=c.CandID AND c.Active='Y')
             WHERE Test_name=:tn AND f.CommentID NOT LIKE 'DDE%'";
@@ -334,7 +334,7 @@ class InstrumentQueryEngine implements \LORIS\Data\Query\QueryEngine
         $q->execute([]);
 
         $rows = $DB->pselect(
-            "SELECT c.CandID, CommentID FROM flag f 
+            "SELECT c.CandID, CommentID FROM flag f
                 JOIN session s ON (f.SessionID=s.ID)
                 JOIN candidate c ON (s.CandID=c.CandID)
              WHERE f.CommentID NOT LIKE 'DDE%'
@@ -368,6 +368,7 @@ class InstrumentQueryEngine implements \LORIS\Data\Query\QueryEngine
                 $items,
                 $field2instMap
             );
+            //die;
         }
         return $this->_mergeIterators($candidates, $instrumentIterators);
     }
@@ -454,6 +455,7 @@ class InstrumentQueryEngine implements \LORIS\Data\Query\QueryEngine
                         $candData[$dict->getName()] = [];
                     }
                     $sid = $loadedInstrument->getSessionID();
+                   //var_dump($loadedInstrument);die;
                     $candData[$dict->getName()][$sid->__toString()] = [
                         'VisitLabel' => $loadedInstrument->getVisitLabel(),
                         'SessionID'  => $sid->__toString(),
