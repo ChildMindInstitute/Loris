@@ -315,8 +315,18 @@ class NDB_BVL_Instrument_Mindlogger extends \NDB_BVL_Instrument
     function getDictionaryValue(DictionaryField $field)
     {
         $allValues = $this->getInstanceData();
+        $fieldName = $field->getName();
 
-        return $allValues[$field->getName()] ?? '';
+        $filteredArray = array_filter($allValues, function ($key) use ($fieldName) {
+            list($activity1, $version1, $answer, $field1) = explode('__', $key);
+            list($activity2, $version2, $field2) = explode('__', $fieldName);
+            if ($activity1 == $activity2 && $version1 == $version2 && $field1 == $field2) {
+                return true;
+            }
+            return false;
+        }, ARRAY_FILTER_USE_KEY);
+
+        return $filteredArray[0] ?? '';
     }
 
     function clearInstrument(): void
