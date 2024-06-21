@@ -126,7 +126,6 @@ class Schema extends Endpoint
 
             foreach ($data as $versionSchema) {
                 $version = $versionSchema['version'];
-                var_dump($version);
                 $schema = $versionSchema['applet'];
 
                 $appletId     = $schema['id'];
