@@ -61,17 +61,23 @@ class Applet extends Endpoint
     {
         $result = $this->getVisits($appletId);
 
-        $candidates = [];
+        $activities = [];
         $data = [];
         foreach ($result as $entry) {
-            $candidates[$entry['CandID']][] = $entry['Visit_label'];
+            if (!isset($activities[$entry['Test_name']][$entry['CandID']])) {
+                $activities[$entry['Test_name']][$entry['CandID']] = [];
+            }
+
+            $activities[$entry['Test_name']][$entry['CandID']][] = $entry['Visit_label'];
         }
 
-        foreach ($candidates as $candidateId => $entry) {
-            $data[] = [
-                'CandID' => $candidateId,
-                'Visits' => array_unique($entry),
-            ];
+        foreach ($activities as $activityId => $candidates) {
+            foreach ($candidates as $candidateId => $entry) {
+                $data[$activityId][] = [
+                    'CandID' => $candidateId,
+                    'Visits' => array_unique($entry),
+                ];
+            }
         }
 
         return $data;
@@ -111,23 +117,16 @@ class Applet extends Endpoint
                 c.CandID,
                 s.Visit_label
             FROM session s
-            LEFT JOIN flag f ON (s.ID = f.SessionID)
-            LEFT JOIN instrument_mindlogger_schema ims ON (ims.ActivityId = f.Test_name)
-            LEFT JOIN conflicts_unresolved cu
-                ON (cu.CommentId1 = f.CommentID OR cu.CommentID2 = f.CommentID)
-            LEFT JOIN candidate c USING (CandID)
+            JOIN flag f ON (s.ID = f.SessionID)
+            JOIN instrument_mindlogger_schema ims ON (ims.ActivityId = f.Test_name)
+            JOIN candidate c USING (CandID)
             WHERE
                 c.Active = 'Y'
                 AND ims.AppletId = :appletId
             GROUP BY
                 s.ID,
-                s.Date_visit,
-                f.Test_name,
-                f.CommentID,
-                s.Current_stage,
-                s.Screening,
-                s.Approval
-            ORDER BY s.Visit_label, f.Test_name, f.CommentID",
+                f.Test_name
+            ",
             ['appletId' => $appletId]
         );
     }
