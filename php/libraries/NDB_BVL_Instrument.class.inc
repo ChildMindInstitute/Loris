@@ -2082,7 +2082,7 @@ abstract class NDB_BVL_Instrument extends NDB_Page
             if (!in_array($key, $this->_doubleDataEntryDiffIgnoreColumns)) {
                 if ($otherData[$key] != $value) {
                     $diff[] = [
-                        'TableName'      => $this->table,
+                        'TestName'       => $this->testName,
                         'ExtraKeyColumn' => null,
                         'ExtraKey1'      => ' ',
                         'ExtraKey2'      => ' ',
@@ -2264,6 +2264,123 @@ abstract class NDB_BVL_Instrument extends NDB_Page
     }
 
     /**
+     * Calls all functions which propagate data to other sources.
+     *
+     * @return void
+     */
+    function propagateData()
+    {
+        if (strpos($this->getCommentID(), "DDE") === false) {
+            $this->propagateLatestDiagnosisData();
+        }
+    }
+
+    /**
+     * Checks if current instrument contains a diagnosis track
+     * and determines whether it is the latest diagnosis. If so,
+     * it propagates the data to the LatestDiagnosis field in the
+     * candidate table.
+     *
+     * @return void
+     */
+    function propagateLatestDiagnosisData()
+    {
+        // if the instrument is not part of a configured Dx Tracjectory; return
+        $dxEvolutionID = $this->getConfiguredDiagnosisTrajectory();
+        if (is_null($dxEvolutionID)) {
+            return;
+        }
+
+        // Update candidate's diagnosis evolution
+        $this->updateCandidateDiagnosisEvolution($dxEvolutionID);
+    }
+
+    /**
+     * Determines whether this instrument is part of a configured
+     * diagnosis trajectory.
+     *
+     * @return string|null The DxEvolutionID of this instrument's configured
+     *                      diagnosis trajectory.
+     */
+    function getConfiguredDiagnosisTrajectory()
+    {
+        $DB        = $this->loris->getDatabaseConnection();
+        $timepoint = \TimePoint::singleton($this->getSessionID());
+
+        // Check if there is a diagnosis trajectory defined
+        // for this instrument with current session's visit & project
+        $dxEvolutionID = $DB->pselectOne(
+            "SELECT DxEvolutionID FROM diagnosis_evolution
+            WHERE instrumentName=:tn
+            AND ProjectID=:pid
+            AND visitLabel=:vl",
+            [
+                'tn'  => $this->testName,
+                'pid' => $timepoint->getProjectID(),
+                'vl'  => $this->getVisitLabel()
+            ]
+        );
+
+        return $dxEvolutionID ?? null;
+    }
+
+    /**
+     * Determines whether the candidate's latest diagnosis should be updated.
+     * If so, it returns an array containing the source and new diagnosis.
+     *
+     * @param string $dxEvolutionID The ID of configured Diagnsosis Trajectory
+     *                              for this instrument & session.
+     *
+     * @return void
+     */
+    function updateCandidateDiagnosisEvolution(string $dxEvolutionID) : void
+    {
+        $DB        = $this->loris->getDatabaseConnection();
+        $timepoint = \TimePoint::singleton($this->getSessionID());
+
+        // Get the fields that correspond to a configured diagnosis
+        $sourceFields = $DB->pselectOne(
+            "SELECT sourceField
+            FROM diagnosis_evolution
+            WHERE DxEvolutionID=:dxEvID",
+            ['dxEvID' => $dxEvolutionID]
+        );
+
+        $this->instanceData = null;
+        $instrumentData     = $this->getInstanceData();
+        $sourceFields       = explode(",", $sourceFields);
+
+        $diagnosis = [];
+        foreach ($sourceFields as $fieldName) {
+            // None of the diagnosis components should be empty
+            // If so, the latest diagnosis should not be updated.
+            if (!isset($instrumentData[$fieldName])) {
+                continue;
+            }
+            $diagnosis[$fieldName] = $instrumentData[$fieldName];
+        }
+
+        if (!empty($diagnosis)) {
+            $confirmed = $timepoint->getVisitStatus() === 'Pass' ? 'Y' : 'N';
+
+            $set = [
+                'CandID'        => $this->getCandID()->__toString(),
+                'DxEvolutionID' => $dxEvolutionID,
+                'Diagnosis'     => json_encode($diagnosis),
+                'Confirmed'     => $confirmed
+            ];
+
+            // Diagnosis is formatted as JSON and ensures that this is safe.
+            // If we use the safe wrapper, HTML encoding the quotation marks
+            // will make it invalid JSON.
+            $DB->unsafeInsertOnDuplicateUpdate(
+                'candidate_diagnosis_evolution_rel',
+                $set
+            );
+        }
+    }
+
+    /**
      * Calculates the candidate's age at the time of this instrument.
      * If Date_taken is passed, this function  will calculate the age as of
      * the value of that argument. This is used, for instance, in
@@ -2353,6 +2470,30 @@ abstract class NDB_BVL_Instrument extends NDB_Page
             ['CID' => $CommentID]
         );
         return $pscid;
+    }
+
+    /**
+     * Get the candidate's CandID
+     *
+     * @return ?CandID The candidate's CandID
+     */
+    function getCandID() : ?CandID
+    {
+        $db        = $this->loris->getDatabaseConnection();
+        $CommentID = $this->getCommentID();
+
+        $candID = $db->pselectOne(
+            "SELECT c.CandID FROM flag f
+            JOIN session s ON (f.SessionID=s.ID)
+            JOIN candidate c USING (CandID)
+            WHERE f.CommentID=:CID",
+            ['CID' => $CommentID]
+        );
+        if ($candID === null) {
+            return null;
+        }
+        return new CandID($candID);
+
     }
 
     /**
