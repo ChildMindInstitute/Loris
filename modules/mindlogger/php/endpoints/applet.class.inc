@@ -118,10 +118,7 @@ class Applet extends Endpoint
             LEFT JOIN candidate c USING (CandID)
             WHERE
                 c.Active = 'Y'
-                AND s.Active = 'Y'
-                AND f.Data_entry = 'In Progress'
                 AND ims.AppletId = :appletId
-                AND f.CommentID NOT LIKE 'DDE%'
             GROUP BY
                 s.ID,
                 s.Date_visit,
