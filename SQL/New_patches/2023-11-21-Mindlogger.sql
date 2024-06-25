@@ -13,7 +13,7 @@ VALUES ('mindlogger_schema_create', 'Mindlogger applet schemas and instruments t
 CREATE TABLE `instrument_mindlogger_schema`
 (
     `AppletID`      varchar(36) NOT NULL,
-    'AppletName'    varchar(200) NULL,
+    `AppletName`    varchar(200) DEFAULT NULL,
     `Version`       varchar(36) NOT NULL,
     `ActivityID`    varchar(256) NOT NULL,
     `ActivitySchema`  text        NOT NULL,
