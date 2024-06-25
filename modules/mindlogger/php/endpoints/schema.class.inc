@@ -129,6 +129,7 @@ class Schema extends Endpoint
                 $schema = $versionSchema['applet'];
 
                 $appletId     = $schema['id'];
+                $appletName   = $schema['displayName'];
                 $activitiesSchema = $schema['activities'];
 
                 $existingActivities = $this->getExistingActivities($appletId, $version);
@@ -141,7 +142,7 @@ class Schema extends Endpoint
                         continue;
                     }
 
-                    $this->saveSchema($appletId, $version, $activity);
+                    $this->saveSchema($appletId, $appletName, $version, $activity);
                     $this->makeInstrument($activityId, $instrumentSubgroupId, $activity["name"] . ' ' . $version);
                 }
             }
@@ -189,12 +190,13 @@ class Schema extends Endpoint
         );
     }
 
-    public function saveSchema($appletId, $version, $data)
+    public function saveSchema($appletId, $appletName, $version, $data)
     {
         $this->db->unsafeInsert(
             'instrument_mindlogger_schema',
             [
                 'AppletID'       => $appletId,
+                'AppletName'     => $appletName,
                 'Version'        => $version,
                 'ActivityID'     => $data['id'],
                 'ActivitySchema' => json_encode($data),

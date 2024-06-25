@@ -107,7 +107,7 @@ class NDB_BVL_Instrument_Mindlogger extends \NDB_BVL_Instrument
             ];
 
             $this->appletName = sprintf('%s (%s, %s)',
-                $this->appletName,
+                $activity['AppletName'] ?? $this->getFullName(),
                 $activitySchema["name"],
                 $activity['Version']
             );
