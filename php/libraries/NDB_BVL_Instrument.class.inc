@@ -2223,6 +2223,12 @@ abstract class NDB_BVL_Instrument extends NDB_Page
             $prepValues["cid$i"] = $commentID;
         }
 
+        //If there is no data for the instrument in the flag table,
+        //the next request will return an error. Therefore, we return an empty array in advance.
+        if (empty($prepBindings)) {
+            return [];
+        }
+
         if ($this->jsonData) {
             $jsondata = $db->pselect(
                 "SELECT CommentID, Data FROM flag WHERE CommentID IN ("
