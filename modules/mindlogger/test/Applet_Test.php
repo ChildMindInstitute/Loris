@@ -51,14 +51,14 @@ class Applet_Test extends TestCase
         $this->assertInstanceOf(\LORIS\Http\Response\JSON\NotFound::class, $response);
     }
 
-    public function testHandleValidRequest()
+    public function testHandleVisitsValidRequest()
     {
         $loris = $this->createMock(LorisInstance::class);
 
         $this->dbMock->method('pselect')->willReturn([
-            ['CandID' => '1', 'Visit_label' => 'V1'],
-            ['CandID' => '1', 'Visit_label' => 'V2'],
-            ['CandID' => '2', 'Visit_label' => 'V1'],
+            ['CandID' => '1', 'Visit_label' => 'V1', 'Test_name' => 'abc'],
+            ['CandID' => '1', 'Visit_label' => 'V2', 'Test_name' => 'abc'],
+            ['CandID' => '2', 'Visit_label' => 'V1', 'Test_name' => 'def'],
         ]);
 
         $applet = new Applet($loris);
@@ -71,8 +71,34 @@ class Applet_Test extends TestCase
         $this->assertInstanceOf(\LORIS\Http\Response\JSON\OK::class, $response);
 
         $expectedData = [
-            ['CandID' => '1', 'Visits' => ['V1', 'V2']],
-            ['CandID' => '2', 'Visits' => ['V1']],
+            'abc' => [['CandID' => '1', 'Visits' => ['V1', 'V2']]],
+            'def' => [['CandID' => '2', 'Visits' => ['V1']]],
+        ];
+
+        $this->assertEquals($expectedData, json_decode((string) $response->getBody(), true));
+    }
+
+    public function testHandleAnswersValidRequest()
+    {
+        $loris = $this->createMock(LorisInstance::class);
+
+        $this->dbMock->method('pselectCol')->willReturn([
+            '{"abc123__1.1__def456__field1": "data1"}',
+            '{"cba321__1.1__fed654__field2": "data2"}',
+        ]);
+
+        $applet = new Applet($loris);
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->method('getAttribute')->with('pathparts')->willReturn([0, 123, 'answers']);
+
+        $response = $applet->handle($request);
+
+        $this->assertInstanceOf(\LORIS\Http\Response\JSON\OK::class, $response);
+
+        $expectedData = [
+            'def456',
+            'fed654'
         ];
 
         $this->assertEquals($expectedData, json_decode((string) $response->getBody(), true));
