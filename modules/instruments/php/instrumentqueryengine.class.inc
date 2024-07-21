@@ -49,6 +49,10 @@ class InstrumentQueryEngine implements \LORIS\Data\Query\QueryEngine
                     "",
                     "",
                 );
+
+                if (!$inst->showTestInCategoryList($testname)) {
+                    continue;
+                }
                 $cat    = new \LORIS\Data\Dictionary\Category(
                     $testname,
                     $inst->getFullName()
@@ -455,7 +459,6 @@ class InstrumentQueryEngine implements \LORIS\Data\Query\QueryEngine
                         $candData[$dict->getName()] = [];
                     }
                     $sid = $loadedInstrument->getSessionID();
-                   //var_dump($loadedInstrument);die;
                     $candData[$dict->getName()][$sid->__toString()] = [
                         'VisitLabel' => $loadedInstrument->getVisitLabel(),
                         'SessionID'  => $sid->__toString(),

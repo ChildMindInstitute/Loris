@@ -3290,4 +3290,9 @@ abstract class NDB_BVL_Instrument extends NDB_Page
     {
         return $this->selectMultipleElements;
     }
+
+    public function showTestInCategoryList($testName): bool
+    {
+        return true;
+    }
 }
