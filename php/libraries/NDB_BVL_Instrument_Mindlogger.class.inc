@@ -333,4 +333,11 @@ class NDB_BVL_Instrument_Mindlogger extends \NDB_BVL_Instrument
     {
         //do nothing
     }
+    
+    public function showTestInCategoryList($testName): bool
+    {
+        $db = $this->loris->getDatabaseConnection();
+
+        return $db->pselectOne("SELECT EXISTS(SELECT * FROM flag WHERE Test_name = ? AND Data IS NOT NULL)", [$testName]);
+    }
 }
